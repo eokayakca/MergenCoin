@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/eokayakca/MergenCoin/issues"
   },
-  "homepage": "https://github.com/eokayakca/MergenCoin#readme"
+  "homepage": "https://github.com/eokayakca/MergenCoin#readme",
+  "dependencies": {
+    "object-hash": "^3.0.0"
+  }
 }
