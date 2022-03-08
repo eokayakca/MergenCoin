@@ -17,6 +17,8 @@
   },
   "homepage": "https://github.com/eokayakca/MergenCoin#readme",
   "dependencies": {
+    "chalk": "^5.0.0",
+    "mongoose": "^6.2.4",
     "object-hash": "^3.0.0"
   }
 }

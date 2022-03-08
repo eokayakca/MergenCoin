@@ -1,5 +1,13 @@
 let hash = require("object-hash")
 
+const TARGET_HASH = hash(1923);
+
+let validator = require("../src/validator");
+
+let mongoDB = require("mongoose");
+
+let MergenChainModel = mongoDB.model("MergenChain");
+
 class BlockChain{
 
     constructor(){
@@ -17,12 +25,22 @@ class BlockChain{
              prevHash: prevHash
         }
 
-        this.hash = hash(block)
+        if(validator.PoW() == TARGET_HASH){
+            block.hash = hash(block); 
+            let newBlock = new MergenChainModel(block);
 
-        this.chain.push(block); //Zincire ekledik
-        this.currTransaction = [] //İşlemler bloğa eklendiği için temizliyoruz
+            newBlock.save((err) => {
+            if(err) return console.log("Blok kayıt edilemedi. ", err.message);
+            console.log("Blok başarıyla kayıt edildi.");
+            });
+            
+            this.chain.push(block); //Zincire ekledik
+            this.currTransaction = [] //İşlemler bloğa eklendiği için temizliyoruz
+    
+            return block
+        }
 
-        return block
+       
     }
 
     //Yeni işlem oluşturuyoruz

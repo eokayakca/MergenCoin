@@ -1,38 +1,19 @@
-let BlockChain = require("./Blockchain/BlockChain")
+let database = require("./src/database")
+database.onConnect(() => {
 
-let MergenChain = new BlockChain();
+    let BlockChain = require("./Blockchain/BlockChain")
 
-let hash = require("object-hash");
+    let MergenChain = new BlockChain();
+    
+    /*if(proofOfWork() == PROOF){
+        MergenChain.newTransaction("Ertunç","Okay",20);
+        let prevHash = MergenChain.lastBlock() ? MergenChain.lastBlock().hash : null;
+        MergenChain.newBlock(prevHash)
+    }*/
 
-let PROOF = 1560;
-
-let validProof = (proof) => {
-    let guessHash = hash(proof);
-
-    console.log("Hash: ", guessHash);
-
-    return guessHash == hash(PROOF)
-}
-
-//Burası PoS şeklinde değişecek. Diğer projeleri biraz incelemek lazım.
-let proofOfWork = () => {
-    let proof = 0;
-
-    while(true){
-        if(!validProof(proof)){
-            proof++;
-        }else{
-            break;
-        }
-    }
-
-    return proof
-}
-
-if(proofOfWork() == PROOF){
     MergenChain.newTransaction("Ertunç","Okay",20);
-    let prevHash = MergenChain.lastBlock() ? MergenChain.lastBlock().hash : null;
-    MergenChain.newBlock(prevHash)
-}
+    MergenChain.newBlock(null)
 
-console.log("Chain: ",MergenChain.chain)
+    console.log("Chain: ",MergenChain.chain)
+
+});
