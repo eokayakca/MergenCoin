@@ -1,26 +1,36 @@
 let hash = require("object-hash");
 
-const TARGET_HASH = 1923;
-
-module.exports.validProof= (proof) => {
-    let guessHash = hash(proof);
+module.exports.validProof = (nonce,block,difficulty,diffString) => {
+    let guessHash = module.exports.getHash(block,nonce);
 
     console.log("Hash: ", guessHash);
     
-    return guessHash == hash(TARGET_HASH)
+    return guessHash.substring(0, difficulty) == diffString
+}
+
+module.exports.getHash = (block,nonce) => {
+    hash_str = JSON.stringify(block.transactions) + block.index + block.previousHash + nonce;
+    return hash(hash_str);
 }
 
 //Burası PoS şeklinde değişecek. Konsensus algoritmaları incelenecek.
-module.exports.PoW = ( ) => {
-    let proof = 0;
+//Aslında ilk nonce değerini bulan ağa duyurabilir.
+module.exports.PoW = (block,difficulty) => {
+    let nonce = 0;
+
+    diffString = "";
+
+    for (let step = 0; step < difficulty; step++) {
+        diffString += "0";
+    }
 
     while(true){
-        if(!module.exports.validProof(proof)){
-            proof++;
+        if(!module.exports.validProof(nonce,block,difficulty,diffString)){
+            nonce++;
         }else{
             break;
         }
     }
 
-    return hash(proof);
+    return nonce;
 }

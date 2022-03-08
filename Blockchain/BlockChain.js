@@ -1,6 +1,4 @@
-let hash = require("object-hash")
-
-const TARGET_HASH = hash(1923);
+let difficulty = 3;
 
 let validator = require("../src/validator");
 
@@ -16,29 +14,47 @@ class BlockChain{
         this.currTransaction = []
     }
 
+    //Son bloğu çağırıyoruz
+    getLastBlock(callback){
+        return MergenChainModel.findOne({}, null, {sort:{ _id: -1}, limit:1}, (err,  block) => {
+            if(err) return console.log("Son blok bulunamadı.");
+            return callback(block);
+        });
+    }
+
     //Yeni blok oluşturuyoruz
     newBlock(prevHash){
         let block = {
-             index: this.chain.length + 1,
-             timestamp: Date.now(),
-             transactions: this.currTransaction, //İşlemleri bloğa ekliyoruz
-             prevHash: prevHash
+            index: this.chain.length + 1,
+            timestamp: Date.now(),
+            transactions: this.currTransaction, //İşlemleri bloğa ekliyoruz
+            prevHash: prevHash,
+            hash: "",
+            nonce: null
         }
 
-        if(validator.PoW() == TARGET_HASH){
-            block.hash = hash(block); 
+        let nonce = validator.PoW(block,difficulty);
+        block.nonce = nonce;
+        block.hash = validator.getHash(block,nonce);
+
+        this.getLastBlock((lastBlock) => {
+
+            if(lastBlock){
+                block.prevHash = lastBlock.hash;
+            }
+
             let newBlock = new MergenChainModel(block);
 
             newBlock.save((err) => {
-            if(err) return console.log("Blok kayıt edilemedi. ", err.message);
-            console.log("Blok başarıyla kayıt edildi.");
+                if(err) return console.log("Blok kayıt edilemedi. ", err.message);
+                console.log("Blok başarıyla kayıt edildi.");
             });
             
             this.chain.push(block); //Zincire ekledik
             this.currTransaction = [] //İşlemler bloğa eklendiği için temizliyoruz
     
             return block
-        }
+        });
 
        
     }
@@ -52,9 +68,9 @@ class BlockChain{
         return this.chain.slice(-1)[0];
     }
 
-    isEmpty(){
+    /*isEmpty(){
         return this.chain.length == 0; 
-    }
+    }*/
 
 }
 

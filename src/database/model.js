@@ -21,6 +21,10 @@ let MergenSchema = new Schema({
     hash: {
         required: true,
         type: Schema.Types.String
+    },
+    nonce: {
+        required: false, //Genesis Blok
+        type: Schema.Types.Number
     }
 });
 
