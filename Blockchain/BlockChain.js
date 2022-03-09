@@ -1,4 +1,4 @@
-let difficulty = 3;
+let difficulty = 4;
 
 let validator = require("../src/validator");
 
@@ -8,10 +8,11 @@ let MergenChainModel = mongoDB.model("MergenChain");
 
 class BlockChain{
 
-    constructor(){
-
+    constructor(server){
         this.chain = [] //
         this.currTransaction = []
+        this.pendingTransaction = [] //işlemler önce sıraya alınacak.
+        this.server = server
     }
 
     //Son bloğu çağırıyoruz
@@ -22,18 +23,69 @@ class BlockChain{
         });
     }
 
-    //Yeni blok oluşturuyoruz
-    newBlock(prevHash){
+    mining(){
         let block = {
-            index: this.chain.length + 1,
+            index: 1,
             timestamp: Date.now(),
             transactions: this.currTransaction, //İşlemleri bloğa ekliyoruz
-            prevHash: prevHash,
+            prevHash: "",
             hash: "",
             nonce: null
         }
 
         let nonce = validator.PoW(block,difficulty);
+
+        if(nonce == false){
+            setInterval(() => {
+                this.mining();
+            }, 1);
+        }else{
+
+            block.nonce = nonce;
+            block.hash = validator.getHash(block,nonce);
+
+            //this.server.emit("endMinning", block);
+
+            this.getLastBlock((lastBlock) => {
+
+                if(lastBlock){
+                    block.prevHash = lastBlock.hash;
+                    block.index = lastBlock.index + 1;
+                }
+
+                let newBlock = new MergenChainModel(block);
+
+                this.server.emit("endMinning", newBlock);
+
+                newBlock.save((err) => {
+                    if(err) return console.log("Blok kayıt edilemedi. ", err.message);
+                    //console.log("Blok başarıyla kayıt edildi.");
+                    console.log("Blok: ",block);
+
+                    this.currTransaction = this.pendingTransaction.splice(0, 10000); //İşlemler bloğa eklendiği için sıradaki işlemleri alıyoruz.
+
+                    this.mining();
+                }); //Zincire ekledik
+                
+            });
+        }
+
+        
+    }
+
+    //Yeni blok oluşturuyoruz
+    newBlock(){
+        let block = {
+            index: 1,
+            timestamp: Date.now(),
+            transactions: this.currTransaction, //İşlemleri bloğa ekliyoruz
+            prevHash: "",
+            hash: "",
+            nonce: null
+        }
+
+        let nonce = validator.PoW(block,difficulty);
+        console.log(nonce)
         block.nonce = nonce;
         block.hash = validator.getHash(block,nonce);
 
@@ -41,6 +93,7 @@ class BlockChain{
 
             if(lastBlock){
                 block.prevHash = lastBlock.hash;
+                block.index = lastBlock.index + 1;
             }
 
             let newBlock = new MergenChainModel(block);
@@ -48,29 +101,20 @@ class BlockChain{
             newBlock.save((err) => {
                 if(err) return console.log("Blok kayıt edilemedi. ", err.message);
                 console.log("Blok başarıyla kayıt edildi.");
-            });
-            
-            this.chain.push(block); //Zincire ekledik
-            this.currTransaction = [] //İşlemler bloğa eklendiği için temizliyoruz
-    
+                console.log("Blok: ",block);
+            }); //Zincire ekledik
+            console.log(this.pendingTransaction);
+            this.currTransaction = this.pendingTransaction.splice(0, 10000); //İşlemler bloğa eklendiği için sıradaki işlemleri alıyoruz.
             return block
         });
 
        
     }
 
-    //Yeni işlem oluşturuyoruz
+    //Yeni işlem ekliyoruz
     newTransaction(sender, recipient, amount){
-        this.currTransaction.push({sender,recipient,amount});
+        this.pendingTransaction.push({sender,recipient,amount});
     }
-
-    lastBlock(){
-        return this.chain.slice(-1)[0];
-    }
-
-    /*isEmpty(){
-        return this.chain.length == 0; 
-    }*/
 
 }
 

@@ -1,19 +1,48 @@
 let database = require("./src/database")
+const config = require("./config.json")
+const app = require('express')();
+const bodyParser = require('body-parser');
+const httpServer = require('http').Server(app);
+const io = require('socket.io')(httpServer);
+const client = require('socket.io-client');
+
+let BlockChain = require("./Blockchain/BlockChain");
+const socketListeners = require('./src/socketListeners');
+
+
+let MergenChain = new BlockChain(io);
+
 database.onConnect(() => {
 
-    let BlockChain = require("./Blockchain/BlockChain")
+    /*app.post('/islem', (req, res) => {
+        let response = ''
+        try {
+            MergenChain.newTransaction(req.body.from,req.body.to,req.body.amount);
+            response = {'durum': 1};
+        } catch(ex) {
+            res.status(406);
+            response = {'durum':0,'hata': ex.message};
+        }
 
-    let MergenChain = new BlockChain();
+        res.json(response);
+        
+        //res.send('')
+    });*/
+
+    io.on('connection', (socket) => {
+        console.info(`Socket connected, ID: ${socket.id}`);
+        socket.on('disconnect', () => {
+          console.log(`Socket disconnected, ID: ${socket.id}`);
+        });
+    });
+
+    socketListeners(client("http://localhost:"+config.host.PORT), MergenChain);
     
-    /*if(proofOfWork() == PROOF){
-        MergenChain.newTransaction("Ertunç","Okay",20);
-        let prevHash = MergenChain.lastBlock() ? MergenChain.lastBlock().hash : null;
-        MergenChain.newBlock(prevHash)
-    }*/
+    httpServer.listen(config.host.PORT, () => console.info(`Express server running on ${config.host.PORT}...`));
 
-    MergenChain.newTransaction("Ertunç","Okay",20);
-    MergenChain.newBlock(null)
-
-    console.log("Chain: ",MergenChain.chain)
+    if(config.mining){//Ayarlarda madencilik yapmak istendiğinde çalışacak.
+        console.log("Madencilik aktif");
+        MergenChain.mining();
+    }
 
 });

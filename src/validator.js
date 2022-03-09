@@ -3,7 +3,7 @@ let hash = require("object-hash");
 module.exports.validProof = (nonce,block,difficulty,diffString) => {
     let guessHash = module.exports.getHash(block,nonce);
 
-    console.log("Hash: ", guessHash);
+    //console.log("Hash: ", guessHash);
     
     return guessHash.substring(0, difficulty) == diffString
 }
@@ -13,24 +13,20 @@ module.exports.getHash = (block,nonce) => {
     return hash(hash_str);
 }
 
-//Burası PoS şeklinde değişecek. Konsensus algoritmaları incelenecek.
-//Aslında ilk nonce değerini bulan ağa duyurabilir.
+//Aslında ilk nonce değerini bulan ağa duyurur. Ama ödüller rehin edilen kripto oranında paylaştırılır.
 module.exports.PoW = (block,difficulty) => {
-    let nonce = 0;
+    let nonce = Math.floor(Math.random() * (100**difficulty));
 
     diffString = "";
 
-    for (let step = 0; step < difficulty; step++) {
-        diffString += "0";
+    for (let step = 0; step < difficulty; step++) diffString += "0";
+
+    if(!module.exports.validProof(nonce,block,difficulty,diffString)){
+        return false;
+    }else{
+        return nonce;
     }
 
-    while(true){
-        if(!module.exports.validProof(nonce,block,difficulty,diffString)){
-            nonce++;
-        }else{
-            break;
-        }
-    }
-
-    return nonce;
+    //console.log(nonce)
+    
 }
