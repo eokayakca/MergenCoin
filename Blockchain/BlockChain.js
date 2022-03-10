@@ -1,11 +1,11 @@
 let validator = require("../src/validator");
 const config = require("../config.json");
 
-let difficulty = 3;
+let difficulty = 6;
 
 let mongoDB = require("mongoose");
 
-let MergenChainModel = mongoDB.model("MergenChain");
+let MergenChainModel = mongoDB.model("mergens");
 
 class BlockChain{
 

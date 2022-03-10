@@ -28,4 +28,4 @@ let MergenSchema = new Schema({
     }
 });
 
-module.exports = mongoDB.model("MergenChain", MergenSchema)
+module.exports = mongoDB.model("mergens", MergenSchema)
