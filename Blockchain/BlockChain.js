@@ -1,6 +1,7 @@
-let difficulty = 4;
-
 let validator = require("../src/validator");
+const config = require("../config.json");
+
+let difficulty = 3;
 
 let mongoDB = require("mongoose");
 
@@ -9,9 +10,9 @@ let MergenChainModel = mongoDB.model("MergenChain");
 class BlockChain{
 
     constructor(server){
-        this.chain = [] //
+        //this.chain = [] //Sanırım artık bu değişkeni kullanmıyorum. Eğer bir hata yoksa sileceğim
         this.currTransaction = []
-        this.pendingTransaction = [] //işlemler önce sıraya alınacak.
+        this.pendingTransaction = [] //işlemler önce sıraya alınacak. Aslında sıraya almaya gerek yok
         this.server = server
     }
 
@@ -36,58 +37,21 @@ class BlockChain{
         let nonce = validator.PoW(block,difficulty);
 
         if(nonce == false){
-            setInterval(() => {
+            setTimeout(() => {
                 this.mining();
             }, 1);
         }else{
-
             block.nonce = nonce;
             block.hash = validator.getHash(block,nonce);
 
-            //this.server.emit("endMinning", block);
-
-            this.getLastBlock((lastBlock) => {
-
-                if(lastBlock){
-                    block.prevHash = lastBlock.hash;
-                    block.index = lastBlock.index + 1;
-                }
-
-                let newBlock = new MergenChainModel(block);
-
-                this.server.emit("endMinning", newBlock);
-
-                newBlock.save((err) => {
-                    if(err) return console.log("Blok kayıt edilemedi. ", err.message);
-                    //console.log("Blok başarıyla kayıt edildi.");
-                    console.log("Blok: ",block);
-
-                    this.currTransaction = this.pendingTransaction.splice(0, 10000); //İşlemler bloğa eklendiği için sıradaki işlemleri alıyoruz.
-
-                    this.mining();
-                }); //Zincire ekledik
-                
-            });
+            this.server.emit("endMinning", block);
         }
-
         
     }
 
-    //Yeni blok oluşturuyoruz
-    newBlock(){
-        let block = {
-            index: 1,
-            timestamp: Date.now(),
-            transactions: this.currTransaction, //İşlemleri bloğa ekliyoruz
-            prevHash: "",
-            hash: "",
-            nonce: null
-        }
-
-        let nonce = validator.PoW(block,difficulty);
-        console.log(nonce)
-        block.nonce = nonce;
-        block.hash = validator.getHash(block,nonce);
+    //Yeni blok ağda ilan edildiğinde zincire ekliyoruz.
+    //Buraya bir kontrol sistemi eklemek lazım.
+    addBlock(block){
 
         this.getLastBlock((lastBlock) => {
 
@@ -100,20 +64,24 @@ class BlockChain{
 
             newBlock.save((err) => {
                 if(err) return console.log("Blok kayıt edilemedi. ", err.message);
-                console.log("Blok başarıyla kayıt edildi.");
+                //console.log("Blok başarıyla kayıt edildi.");
                 console.log("Blok: ",block);
-            }); //Zincire ekledik
-            console.log(this.pendingTransaction);
-            this.currTransaction = this.pendingTransaction.splice(0, 10000); //İşlemler bloğa eklendiği için sıradaki işlemleri alıyoruz.
-            return block
-        });
 
-       
+                this.currTransaction = this.pendingTransaction; //İşlemler bloğa eklendiği için sıradaki işlemleri alıyoruz.
+                this.pendingTransaction = [];
+
+                if(config.mining){//Ayarlarda madencilik yapmak istendiğinde çalışacak.
+                    console.log("Madencilik yeniden başlatıldı.");
+                    this.mining();
+                }
+            }); //Zincire ekledik            
+        });
     }
 
     //Yeni işlem ekliyoruz
-    newTransaction(sender, recipient, amount){
-        this.pendingTransaction.push({sender,recipient,amount});
+    addTransaction(data){
+        console.log(data);
+        this.pendingTransaction.push(data);
     }
 
 }
